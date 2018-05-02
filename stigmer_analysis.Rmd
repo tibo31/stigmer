@@ -6,6 +6,10 @@ output:
     number_sections: yes
     toc: yes
     toc_depth: 2
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '2'
 ---
 
 ```{r setup, include=FALSE}
@@ -29,8 +33,8 @@ Vocabulary used:
 * The **gain per round** is the sum of the 5 gains obtained during a round,
 * The **final gain** is the sum of the gains obtained by a player during a session,
 * A **cell** is one of the 9 cells of the grid,
-* Under R1, a player let a **coin** at each cell visited,
-* Under R2, a player has the choice to let or not a coin at the visited cell. 
+* Under R1, a player leaves a **coin** in each cell visited,
+* Under R2, a player has the choice to leave or not a coin in the visited cell. 
 
 
 # Importation of the data
@@ -122,15 +126,15 @@ These anomalies have been detected in the version of the data given on March the
 
 ### Stigmer 15 
 
-* In: Rule 1, session 03, in round "7B", a player is called 4B instead of B4. We correct this anomaly:
+* In: Rule 1, session 03, in round "7B", a player is called 4B instead of B4. We have corrected this anomaly:
 
 ```{r}
 file_15[file_15$player == "4B", "player"] <- "B4"
 ```
 
-* In: Rule 2, session 01, we found two rounds with name "14A" : we kept only one round (the one with the date the earlier).
+* In: Rule 2, session 01, we found two rounds with name "14A" : we kept only one round (the one with the earlier date).
 
-* In: Rule 2, session 03, there is one missing row in round "11A". A player did not play at step 1. We impute this missing value by considering that he had a higher probability to get a 0. We correct this:   
+* In: Rule 2, session 03, there is one missing row in round "11A". A player did not play at step 1. We impute this missing value by 0, considering that this was the value he was most likely to get. We have corrected this:   
 
 ```{r}
 file_15[is.na(file_15$gain_1), c("gain_1", "action_1", "gain")] <-
@@ -138,19 +142,19 @@ file_15[is.na(file_15$gain_1), c("gain_1", "action_1", "gain")] <-
 file_15[is.na(file_15$gain_1), "cell_1"] <- "1_1"
 ```
 
-* In: Rule 2, session 01bis, in round "14", a player is called "A1" instead of "B4". We correct this : 
+* In: Rule 2, session 01bis, in round "14", a player is called "A1" instead of "B4". We have corrected this : 
 ```{r}
 file_15[file_15$player == "A1" & file_15$session == "session_01Bis" & 
         file_15$rule == "R2" & file_15$round == "T14" & file_15$gain_2 == 0 , "player"] <- "B4"
 ```
 
-* In: Rule 2, session 01bis, in round "15", a player is called "B4" instead of "A1". We correct this : 
+* In: Rule 2, session 01bis, in round "15", a player is called "B4" instead of "A1". We have corrected this : 
 ```{r}
 file_15[file_15$player == "B4" & file_15$session == "session_01Bis" & 
         file_15$rule == "R2" & file_15$round == "T15" & file_15$gain_2 == 0 , "player"] <- "A1"
 ```
 
-* In Rule 1, players should have let a coin at each step. We notice that this is not necessarly the case : 
+* In Rule 1, players should have left a coin at each step. We notice that this is not necessarily the case : 
 
     * player A2 in session 01, round "1A", "3A", "5A", "12A", "13A",
     * player B1 in session 02, round "6B", "7B", "8B", "12B",
@@ -159,9 +163,9 @@ file_15[file_15$player == "B4" & file_15$session == "session_01Bis" &
     * player A1 in session 03, round "1A",
     * player B4 in session 03, round "6B".
 
-**Remark:** no corrections have been applied because in Rule 1, we implicitely suppose that all players have indicated their choice. 
+**Remark:** no corrections have been applied because in Rule 1, we implicitly suppose that all players have indicated their choices. 
 
-* We now identify the players who did not play value 99 although they knew where it was located. For doing this, we create the function *detect\_bad\_player()* (codes presented in .Rmd file) : 
+* We now identify the players who did not play value 99 although they knew where it was located. For doing this, we created the function *detect\_bad\_player()* (codes presented in .Rmd file) : 
 
 ```{r, echo = F}
 detec_bad_player <- function (fic){
@@ -201,14 +205,14 @@ detec_bad_player(file_15)
 ```
 
 
-**Remark:** we do not apply any corrections for these individuals and keep them in the analysis. 
+**Remark:** we did not apply any corrections for these individuals and kept them in the analysis. 
 
 
 ### Stigmer 50
 
 * In : Rule 0 / session 01 / round "3B", player B4 did not play at all during this game. Correction done: none. 
 
-* In Rule 1, players should have indicated all their choices (value 1). We notice that this not necessarly the case : 
+* In Rule 1, players should have indicated all their choices (value 1). We noticed that this is not necessarily the case : 
 
     * player B2 in session 01, round "1B",
     
@@ -218,15 +222,15 @@ detec_bad_player(file_15)
     
     * player A3 in session 01, round "2A", "3A", "4A".  
     
-**Remark:** no corrections have been applied because in Rule 1, we implicitely suppose that all players have indicated their choice. 
+**Remark:** no corrections have been applied because in Rule 1, we implicitly suppose that all players have indicated their choices. 
 
-* We now identify the players who did not play value 99 although they know where it is located :
+* We will now identify the players who did not play value 99 although they knew where it was located :
 
 ```{r}
 detec_bad_player(file_50)
 ```
 
-**Remark:** we do not apply any corrections for these individuals and keep them in the analysis. 
+**Remark:** we did not apply any corrections for these individuals and kept them in the analysis. 
 
 # Statistical analysis of Stigmer 15
 
@@ -236,7 +240,7 @@ The idea here is to represent the empirical probability to get one of the values
 
 ### Representation 
 
-We create the function *distib\_per\_step()* (codes presented in .Rmd file) which plots the statistical distribution depending on the Rule (R0, R1, R2) and the steps (1, 2, 3, 4 or 5). 
+We created the function *distib\_per\_step()* (codes presented in .Rmd file) which plots the statistical distribution depending on the Rule (R0, R1, R2) and the steps (1, 2, 3, 4 or 5). 
 
 ```{r, echo = F}
 distib_per_step <- function (fic, game) {
@@ -288,13 +292,13 @@ distib_per_step <- function (fic, game) {
 distib_per_step(fic = file_15, game = 15)
 ```
 
-**Remark:** at step 1 and 2, the distributions seem to be the same under R0, R1 and R2. From step 3, we remark some differences between the rules. For example, at step 3 under R0, the probablity to find 99 or 15 is the same and slightly smaller than the probability to find 0. On contrary, under R1, the probability to find 99 is higher than the probabilities to get 0 neither 15. The distribution under R2 seem to be a mixture of the distributions under R0 and R2.   
+**Remark:** at step 1 and 2, the distributions seem to be the same under R0, R1 and R2. From step 3, we notice some differences between the rules. For example, at step 3 under R0, the probablity to find 99 or 15 is the same and slightly smaller than the probability to find 0. On the contrary, under R1, the probability to find 99 is higher than the probabilities to get 0 or 15. The distribution under R2 seem to be a mixture of the distributions under R0 and R1.   
 
-We now present the analysis rule by rule. 
+We will now present the analysis rule by rule. 
 
 ## Analysis under R0
 
-We select the corresponding rows:
+We have selected the corresponding rows:
 ```{r}
 file_15_R0 <- file_15[file_15$rule == "R0", ]
 ```
@@ -303,14 +307,14 @@ Under R0, there are :
 
 * 2 sessions, 
 * There are 15 rounds in a session,
-* For each session, there are two parallel games: 5 players called $A1, ..., A5$ and 5 players called $B1, ..., B5$, which means that there are 20 different players. 
+* For each session, there are two parallel games: 5 players called $A1, ..., A5$ and 5 players called $B1, ..., B5$, which means that in total there are 20 different players. 
 
-In this section, we try to identify what is the best strategy for players to optimize their profit. Then, we look if the players did adopt such a strategy and if we can see differences in terms of gain between the different strategies.  
+In this section, we try to identify what is the best strategy for players to optimize their profit. Then, we check if the players did adopt such a strategy and if we can see differences in terms of gain between the different strategies.  
 
 
-### Probability to get 0, 15, 99 under R0: comparaison between empirical and expected distribution 
+### Probability to get 0, 15, 99 under R0: comparison between empirical and expected distribution 
 
-Under R0, players have no information about the rest of the group. Thus, to maximize his profit, a player should explore a new cell at each new step until he finds the value 99 (this could be prooved by using theoretical probability). Thus, we can simulate a high number of times this kind of behaviour, such that we have the expected distribution. We program the function *simu\_distrib\_R0()* (codes presented in .Rmd file) for doing this task.
+Under R0, players have no information about the rest of the group. Thus, to maximize their profit, a player should explore a new cell at each new step until they find the value 99 (this could be proved by using theoretical probability). Thus, we can simulate a high number of times this kind of behaviour, so that we obtain the expected distribution. We program the function *simu\_distrib\_R0()* (codes presented in .Rmd file) for doing this task.
 
 ```{r, echo =F}
 simu_distrib_R0 <- function(game) {
@@ -350,7 +354,7 @@ simu_distrib_R0 <- function(game) {
 }
 ```
 
-We simulate the behaviours of 100000 players (codes presented in .Rmd file).
+We simulated the behaviours of 100,000 players (codes presented in .Rmd file).
 
 ```{r, echo = F}
 B <- 100000 
@@ -379,9 +383,9 @@ ggplot(gather_tab_15, aes(y = value, x = key, fill = gain)) +
               size = 4) 
 ```
 
-We compare below the empirical distribution with the theoretical one obtained previously. We use a $\chi^2$ test which consists in comparing at each step the empirical distribution of 0, 15, 99 to the theoretical one computed previously.  It seems that the more we progress in the experience, the less the players seem to behave as players who optimize their profit. This is probably due to the fact that some players prefer to conserve their results by playing the value 15 (when they know where it is located) rather than continuing to explore, especially at the end of a round. 
+We will compare below the empirical distribution with the theoretical one obtained previously. We use a $\chi^2$ test which consists of comparing at each step the empirical distribution of 0, 15, 99 to the theoretical one computed previously.  It seems that the more we progress in the experience, the less the players seem to behave as players who optimize their profit. This is probably due to the fact that some players prefer to conserve their results by playing the value 15 (when they know where it is located) rather than continue to explore, especially at the end of a round. 
 
-**Interpretation of the $\chi^2$ test:** the null hypothesis is "Distribution of empirical and theoretical are identical". When the p-value is lower than 0.05, we usually reject the null hypothesis. If the p-value is upper than 0.05, we cannot reject it. In our case, the distributions (emprirical VS theoretical) are the same at step 1, 2, 3 and slightly different at step 4, 5. 
+**Interpretation of the $\chi^2$ test:** the null hypothesis is "The distributions of empirical and theoretical are identical". When the p-value is lower than 0.05, we usually reject the null hypothesis. If the p-value is upper than 0.05, we cannot reject it. In our case, the distributions (empirical VS theoretical) are the same at step 1, 2, 3 and slightly different at step 4, 5. 
 
 ```{r}
 chisq.test(table(as.factor(file_15_R0[, "gain_1"])),
@@ -401,9 +405,9 @@ chisq.test(table(as.factor(file_15_R0[, "gain_5"])),
 
 We are now interested in the gain per round (the sum of the 5 gains obtained during a round). 
 
-#### Comparaison between empirical and expected distribution 
+#### Comparison between empirical and expected distributions 
 
-Thanks to the previous simulation, we can obtain the statistical distibution of the gain per round under R0 when players adopt an optimal strategy 
+Thanks to the previous simulation, we can obtain the statistical distribution of the gain per round under R0 when players adopt an optimal strategy 
 
 ```{r, echo = F}
 final_gain_15 <- apply(distrib_15, 2, sum)
@@ -411,9 +415,9 @@ final_gain_15 <- apply(distrib_15, 2, sum)
 
 Example of interpretation of the empirical cumulative distribution function : 
 
-* the probability to obtain a gain per round lower or equal to 30 is $36.41\%$. 
+* the probability to obtain a gain per round lower than or equal to 30 is $36.41\%$. 
 
-* $49.925\%$ of the population obtained a value lower or equal to 114. On contrary, $100 - 49.925 = 50.075\%$ obtained a gain per round strictly larger than 114. 
+* $49.925\%$ of the population obtained a value lower than or equal to 114. On the contrary, $100 - 49.925 = 50.075\%$ obtained a gain per round strictly larger than 114. 
 
 
 ```{r}
@@ -430,7 +434,7 @@ legend("topleft", legend = c("Theoretical", "Empirical"),
 
 The plot of the empirical cumulative distribution function ("theoretical" versus "empirical") does not show a big difference between the two distributions since the two curves (cyan vs magenta) seem close. 
 
-We use the Kolmogorov-Smirnov test to verify that the two distributions (empirical and theoritical) are extracted from the same distribution or not. The null hypothesis which is "the two distributions are identical" canno't be rejected here. In other term, the gain per round obtained by players could be the ones obtained by players who optimize their profit. 
+We use the Kolmogorov-Smirnov test to verify that the two distributions (empirical and theoretical) are extracted from the same distribution or not. The null hypothesis which is "the two distributions are identical" cannot be rejected here. In other terms, the gain per round obtained by players could be the one obtained by players who optimize their profit. 
 
 ```{r}
 ks.test(x = final_gain_15, 
@@ -438,7 +442,7 @@ ks.test(x = final_gain_15,
         exact = F)
 ```
 
-**Remark:** note that the Kolmogorov-Smirnov test is supposed to be used on continous variable which is not the case here (the gain per round is indeed discrete). A solution could be to use instead a $\chi^2$ test. However, we can not use it for the following reason : in the optimal situation (theoretical distribution), players might not be able to obtain a gain per round equal to 60 or 75 (a player is exploring new cases unless he founds 99, so he can only find the value 15 one, two or three times). Besides, the probability to obtain these values 60 or 75 are equal to 0, although these situations can occur in the experimental context (players who play several times the same cell containing 15). As the $\chi^2$ test can be seen as the sum of the distances between theoretical and empirical values divided by the theoretical probability, we canno't use theoretical probability equal to 0. 
+**Remark:** note that the Kolmogorov-Smirnov test is supposed to be used on continous variable which is not the case here (the gain per round is indeed discrete). A solution could be to use instead a $\chi^2$ test. However, we cannot use it for the following reason : in the optimal situation (theoretical distribution), players might not be able to obtain a gain per round equal to 60 or 75 (a player is exploring new cells unless they found 99, so they can only find the value 15 one, two or three times). Besides, the probability to obtain these values 60 or 75 are equal to 0, although these situations can occur in the experimental context (players who play several times the same cell containing 15). As the $\chi^2$ test can be seen as the sum of the distances between theoretical and empirical values divided by the theoretical probability, we cannot use theoretical probability equal to 0. 
 
 #### Exploring or taking no risk ?
 
@@ -492,9 +496,8 @@ First, we tidy the data (codes presented in .Rmd file).
 
 ```{r, echo = F}
 gather_file_15 <- file_15_R0_explore %>%
-  select(explore_2, explore_3, explore_4, explore_5, gain) %>%
-  gather(gain)
-names(gather_file_15)[2] <- "step"
+  select(gain, explore_2, explore_3, explore_4, explore_5) %>%
+  gather(step, value, explore_2:explore_5)
 ```
 
 Then, we compute the mean and standard deviation obtained at each step and depending on the fact that a player explored new cells or not (codes presented in .Rmd file).
@@ -640,7 +643,7 @@ Under R1, there are :
 
 In this section, we try to identify what is the best strategy for players. Under R1, players can use an additionnal information related to the frequency of visited cells. We try here to understand what is the best way to use this additional information and check if players do adopt this strategy. 
 
-### Probability to get 0, 15, 99 under R1: comparaison between empirical and expected distribution 
+### Probability to get 0, 15, 99 under R1: comparison between empirical and expected distribution 
 
 #### Intuitive best strategy under R1  
 
@@ -707,7 +710,8 @@ simu_distrib_R1_2step <- function(game, strategy = c("1", "2")) {
   order_99 <- ifelse(ind_value == 9, 1, 
                      ifelse(rank_99 == 1, 2, rank_99))
   return(c(nb_max = max_value, found = (ind_value == 9), 
-           found_99 = nb_cell[9] != 0, order = order_99))
+           found_99 = nb_cell[9] != 0, order = order_99, 
+           nb_cell[9] == 0))
 }
 ```
 
@@ -752,7 +756,7 @@ cumsum(table(res_sim_R1_s1[4, ]))/100000
 cumsum(table(res_sim_R1_s2[4, ]))/100000
 ```
 
-**Conclusion:** strategy 2 seems more interesting than strategy 1. However, it could be than a mixture between both strategy (some players who adopt strategy 1 and some others who adopt strategy 2) would be the best thing to do. 
+**Conclusion:** strategy 2 seems more interesting than strategy 1. However, it could be than a mixture between both strategy (some players who adopt strategy 1 and some others who adopt strategy 2) would be the best thing to do. Let imagine a situation where after the 1st step, 5 different cells have been  visited. That means that 4 cells must be visited such that the cell 99 will be necessarly found. However, it also means than the cell 99 has a higher probability (5/9) to be found among the 5 cells already visited. In that case, this is not complety obvious how should behave the players.    
 
 
 ##### At step 3
@@ -783,7 +787,7 @@ text(rep(0.5:2.5, 3), rep(2.3:0.3, each = 3),
      paste("coin =", c(rep(round(5/9, 3), 9))))
 ```
 
-At the second step, players who found 99 are supposed to play 99 again. The others players are supposed to explore new cells with a probability equal to 1/8 and the expected number of coins let in each cell is thus equal to $5 \times (1- 1/9) \times1/8$. After the second step, we sum the expected coins at the 1st and 2nd tour, such that we obtain the expected information which is given to all players before the 3rd step : 
+At the second step, players who found 99 are supposed to play 99 again. The others players are supposed to explore new cells with a probability equal to 1/8 (under strategy 1, for strategy 2 I am not sure it is identical) and the expected number of coins let in each cell is thus equal to $5 \times (1- 1/9) \times1/8$. After the second step, we sum the expected coins at the 1st and 2nd tour, such that we obtain the expected information which is given to all players before the 3rd step : 
 
 ```{r, echo = F}
 op <- par(mfrow = c(1, 2))
@@ -811,49 +815,31 @@ We notice that the cell 99 might be the cell with the maximum expected number of
 
 Moreover, the simulation results obtained at step 2 tend to indicate that if a player has already visited the cell the most visited and knows that it does not contain 99, he should try to play the second most visited cell. 
 
-Finally, if the player knows than the second most visited is not the good one (he has already played the two most visited cells ann knows that they do not contain 99), than he should visits a new cell. 
+Finally, if the player knows than the second most visited is not the good one (he has already played the two most visited cells and knows that they do not contain 99), than he should visit new cell which has not been yet explored by the group.  
 
-##### At step 4
-
-*To be continued*
-Like in step 3. If players has already played the three first most visited cell and he knows that they do not contain 99, he explores a new cell (like in strategy 2).
-
-
-
-##### At step 5
-
-*To be continued*
-Like in step 4. If players has already played the four first most visited cell and he knows that they do not contain 99, he explores a new cell (like in strategy 2).
-
-
-
-#### Simulation of the optimal behaviour of players under R1
-
-We would like to have the theoretical statistical distribution for players who optimize their profit under R1. 
-
-For doing that, we do simulations by reproduccing round per round the behaviours of such players. A party is in 5 steps with 5 players. We suppose that the players adopt these strategies : 
-
-This function is called *simu\_distrib\_R1()* (codes presented in .Rmd file).
+We now simulate such a behaviour to understand which could be the best strategy to adopt after step 3.
 
 ```{r, echo = F}
-simu_distrib_R1 <- function(game) {
+simu_distrib_R1 <- function(game, tour_max) {
   proba_cell <- matrix(1, 9, 5)
   nb_cell <- numeric(9)
   names(nb_cell) <- c(0, 0, 0, 0, 0, game, game, game, 99)
   gain <- matrix(0, 5, 5)
-    
+  
   # step 1 
   simu_k <- rmultinom(5, size = 1, prob = rep(1/9, 9))
   nb_cell <- nb_cell + apply(simu_k, 1, sum)
   
   proba_cell <- proba_cell - simu_k
   gain[, 1] <- c(0, 0, 0, 0, 0, game, game, game, 99)[apply(simu_k, 2, function(x) which(x == 1))]
-    
+  
   tour <- 2
-  nb_choice <- 8 
-  proba_step2 <- ifelse(nb_cell == 0, 1, 0)
+
+  
+  while (tour <= tour_max) {
     
-  while (tour <= 5) {
+  proba_step_k <- ifelse(nb_cell == 0, 1, 0)
+  
     if (tour > 2) {
       # order the cells the most played at the previous step 
       table_cell_max <- table(nb_cell)
@@ -862,9 +848,9 @@ simu_distrib_R1 <- function(game) {
         which_value <- which(nb_cell == value_max)
         if (length(which_value) == 1) {
           rank_cell <- c(rank_cell, which_value)
-          } else {
-            rank_cell <- c(rank_cell, sample(which_value))
-          }
+        } else {
+          rank_cell <- c(rank_cell, sample(which_value))
+        }
       }
     }
     # simulate the result player by player 
@@ -872,43 +858,129 @@ simu_distrib_R1 <- function(game) {
       if (proba_cell[9, k] == 0) {
         gain[k, tour] <- 99
         nb_cell[9] <- nb_cell[9] + 1 
+      } else {
+        if (gain[k, tour - 1] == 50) {
+          gain[k, tour] <- 50
+          cell_played_50 <- (6:8)[which(proba_cell[6:8, k]) == 1]
+          nb_cell[cell_played_50] <- nb_cell[cell_played_50] + 1 
         } else {
-          if (gain[k, tour - 1] == 50) {
-            gain[k, tour] <- 50
-            cell_played_50 <- (6:8)[which(proba_cell[6:8, k]) == 1]
-            nb_cell[cell_played_50] <- nb_cell[cell_played_50] + 1 
+          
+          if (tour > 2) {
+            ind_rank <- 1
+            while (proba_cell[rank_cell[ind_rank], k] != 1) {
+              ind_rank <- ind_rank + 1
+            }
+            if(ind_rank <= (tour - 1)) {
+              simu_k <- numeric(9)
+              simu_k[rank_cell[ind_rank]] <- 1
             } else {
-              
-              if (tour > 2) {
-                ind_rank <- 1
-                while (proba_cell[rank_cell[ind_rank], k] != 1) {
-                  ind_rank <- ind_rank + 1
-                }
-                simu_k <- numeric(9)
-                simu_k[rank_cell[ind_rank]] <- 1
+              if(sum(proba_step_k) != 0) {
+                simu_k <- rmultinom(1, size = 1, prob = proba_step_k)
               } else {
-                  # strategy 1 : 
-                  # simu_k <- rmultinom(1, size = 1, prob = proba_cell[, k])
-                  # strategy 2 : 
-                  simu_k <- rmultinom(1, size = 1, prob = proba_step2)
+              simu_k <- rmultinom(1, size = 1, prob = proba_cell[, k])
               }
-              
-              nb_cell <- nb_cell + simu_k
-              proba_cell[, k] <- proba_cell[, k] - simu_k
-              gain[k, tour] <- c(0, 0, 0, 0, 0, game, game, game, 99)[which(simu_k == 1)]
-              }
+            }
+          } else {
+            # strategy 1 : 
+            # simu_k <- rmultinom(1, size = 1, prob = proba_cell[, k])
+            # strategy 2 : 
+            simu_k <- rmultinom(1, size = 1, prob = proba_step_k)
+          }
+          
+          nb_cell <- nb_cell + simu_k
+          proba_cell[, k] <- proba_cell[, k] - simu_k
+          gain[k, tour] <- c(0, 0, 0, 0, 0, game, game, game, 99)[which(simu_k == 1)]
         }
       }
-    tour <- tour + 1  
     }
-  return(gain)
+    tour <- tour + 1  
+  }
+  
+  max_value <- max(nb_cell)
+  # question 2 : if several max, we choose randomly one
+  # is the cell the most visited is the good one ? 
+  ind_value <- sample(rep(which(nb_cell == max_value), 2), 1)
+  rank_99 <- which(rev(order(nb_cell)) == 9)
+  order_99 <- ifelse(ind_value == 9, 1, 
+                     ifelse(rank_99 == 1, 2, rank_99))
+  
+  if (tour_max < 5) {
+    return(c(nb_max = max_value, found = (ind_value == 9), 
+             found_99 = nb_cell[9] != 0, order = order_99))
+  } else {
+    return(gain)
+  }
 }
 ```
 
 ```{r, echo = F}
+set.seed(1)
+res_sim_R1_3step <- replicate(100000, simu_distrib_R1(15, tour_max = 3))
+```
+
+**Q1:** what is the probability that at least one player found the value 99 at the end of step 3?
+
+```{r}
+mean(res_sim_R1_3step[3, ])
+```
+
+**Q2:** what is the probability that the cell which has been the most visited is the cell with value 99?
+
+```{r}
+sum(table(res_sim_R1_3step[1, ], res_sim_R1_3step[2, ])[,2])/100000
+```
+
+**Q3:** what is the probability to find 99 when playing the $k$ first cells the most visited ? 
+
+```{r, echo = F}
+cumsum(table(res_sim_R1_3step[4, ]))/100000
+```
+
+**Remark:** when a player has already played the most visited cell and knows that it does not contain the value 99, it could be more interesting for him to play the 3rd most visited cell rather the 2nd one.
+
+##### At step 4
+
+A player visits the most visited cell if he did explore it yet. Otherwise, he tries to visit the second most visited cell. Otherwise, he tries the 3rd most visited cell. Otherwise he visits a cell which has not been explored. If they have all been explored, he chooses one of them randomly.  
+
+We now simulate such a behaviour to understand which could be the best strategy to adopt after step 3.
+
+```{r, echo = F}
+set.seed(1)
+res_sim_R1_4step <- replicate(100000, simu_distrib_R1(15, tour = 4))
+```
+
+**Q1:** what is the probability that at least one player found the value 99 at the end of step 4?
+
+```{r}
+mean(res_sim_R1_4step[3, ])
+```
+
+**Q2:** what is the probability that the cell which has been the most visited is the cell with value 99?
+
+```{r}
+sum(table(res_sim_R1_4step[1, ], res_sim_R1_4step[2, ])[,2])/100000
+```
+
+**Q3:** what is the probability to find 99 when playing the $k$ first cells the most visited ? 
+
+```{r, echo = F}
+cumsum(table(res_sim_R1_4step[4, ]))/100000
+```
+
+##### At step 5
+
+Like in step 4. If players has already played the four first most visited cell and he knows that they do not contain 99, he explores a cell which has not been explored. If they have all been explored, he chooses one of them randomly. 
+We simulate such a behaviour in the next section. 
+
+
+#### Simulation of the optimal behaviour of players under R1
+
+We now simulate a full party as described previously. This function is called *simu\_distrib\_R1()* (codes presented in .Rmd file).
+
+```{r, echo = F}
 distrib_th_15_R1 <- NULL
 for (k in 1:20000)
-  distrib_th_15_R1 <- rbind(distrib_th_15_R1, simu_distrib_R1(15))
+  distrib_th_15_R1 <- rbind(distrib_th_15_R1, simu_distrib_R1(15, tour_max = 5))
 ```
 
 We obtain this distribution. Note that at step 1 and 2, distributions are obviously identical to the ones obtained in Rule 0. 
@@ -919,11 +991,11 @@ colnames(tab_15_R1) <- paste0("step_", 1:5)
 gather_tab_15_R1 <- gather(as.data.frame(tab_15_R1))
 gather_tab_15_R1$gain <- factor(rep(c(0, 15, 99), 5))
 gather_tab_15_R1$pos <- NULL
-gather_tab_15_R1$pos[gather_tab_15_R1$gain == "0"] <- 0.9
+gather_tab_15_R1$pos[gather_tab_15_R1$gain == "0"] <- 0.98
 gather_tab_15_R1$pos[gather_tab_15_R1$gain == "99"] <- 
-  gather_tab_15_R1$value[gather_tab_15_R1$gain == "99"]/2
+  gather_tab_15_R1$value[gather_tab_15_R1$gain == "99"]/2.5
 gather_tab_15_R1$pos[gather_tab_15_R1$gain == "15"] <- 
-  0.1 + gather_tab_15_R1$value[gather_tab_15_R1$gain == "99"]
+  0.01 + gather_tab_15_R1$value[gather_tab_15_R1$gain == "99"]
 ```
 
 ```{r, echo = F}
@@ -933,7 +1005,7 @@ ggplot(gather_tab_15_R1, aes(y = value, x = key, fill = gain)) +
               size = 4) 
 ```
 
-We compare below the empirical distribution with the theoretical one obtained previously. We use a $\chi^2$ test which consists in comparing at each step the empirical distribution of 0, 15, 99 to the theoretical one computed previously. At step 2, players behave as we can expect. At step 3, 4 and 5, the p-values of the test are very close to $5\%$ which indicates that players behave not completely as players who optimize their profit (note however that the differences are not so important). 
+We compare below the empirical distribution with the theoretical one obtained previously. We use a $\chi^2$ test which consists in comparing at each step the empirical distribution of 0, 15, 99 to the theoretical one computed previously. At step 2, players behave as we can expect. At step 3, 4 and 5, the p-values of the test are lower than $5\%$ which indicates that players do not behave as players who optimize their profit. 
 
 ```{r}
 chisq.test(table(as.factor(file_15_R1[, "gain_2"])),
@@ -950,7 +1022,7 @@ chisq.test(table(as.factor(file_15_R1[,"gain_5"])),
 
 We are now interested in the gain per round (the sum of the 5 gains obtained during a round). 
 
-####  Comparaison between empirical and expected distribution 
+####  comparison between empirical and expected distribution 
 
 Thanks to the previous simulation, we can obtain the statistical distibution of the final gain under R1 when players adopt an optimal behaviour. 
 
@@ -967,7 +1039,7 @@ plot.ecdf(file_15_R1[, "gain"], col = "magenta", add = T)
 legend("topleft", legend = c("Theoretical", "Empirical"), lty = 1, col = c("cyan", "magenta"))
 ```
 
-The following test confirms the previous plot. Hereafter, the test rejects the hyptohesis of equality of the two dsitributions, but the this difference is not so big. 
+The following test confirms the previous plot. Hereafter, the test rejects the hyptohesis of equality of the two distributions. 
 
 ```{r}
 ks.test(x = final_gain_15_R1, 
@@ -976,9 +1048,9 @@ ks.test(x = final_gain_15_R1,
 
 #### Copying, exploring or taking no risk ?
 
-The idea of this section is to determine whose players belong to one of these strategy (copying, exploring, taking no risk) and if we can notice differences in terms of gain between them.
+The idea of this section is to determine whose players belong to one of these strategy (copying, exploring weakly, exploring strongly, taking no risk) and if we can notice differences in terms of gain between them.
 
-**Algorithm (step 1):** to detect players who copy other players at each step, we need to know which is the cell the most visited at the end of a step. We create a matrix which contains for each of the 9 cells, the number of times it has been visited at the end of a step for a given round. Then, we count the number of visits per cell at each step, for given players (A or B) per round and per session (codes presented in .Rmd file).
+**Algorithm (step 1):** to detect players who copy other players at each step, we need to know which is the most visited cell at the end of a step. We create a matrix which contains for each of the 9 cells, the number of times it has been visited at the end of a step for a given round. Then, we count the number of visits per cell at each step, for given players (A or B) per round and per session (codes presented in .Rmd file).
 
 ```{r, echo = F}
 file_15_R1$round_p <- paste0(file_15_R1$round, "_", substr(file_15_R1$player, 1, 1), 
@@ -1030,12 +1102,13 @@ We apply the previous function to our data (codes presented in the .Rmd file).
 cell_visited_R1 <- cell_visited(file_15_R1)
 ```
 
-**Algorithm (step 2):** once we kwow how many times the cells have been visited at each step, one could say if a player decides "yes" or "not" to play the most visited cell. We do the following assumption: if player has already played the most visited cell and knows that it does not contain the value 99, he is supposed to play the second most visited cell, then the third, etc. 
+**Algorithm (step 2):** once we kwow how many times the cells have been visited at each step, one could say if a player decides "yes" or "not" to play the most visited cell. We do the following assumption: if player has already played the most visited cell and knows that it does not contain the value 99, he is supposed to play the second most visited cell (from step 3 to step 5), then the third (from step 4 to step 5) and the fourth (at step 5). 
 For doing this, we create the function *copy\_or\_not()* (codes presented in .Rmd file) which permits to know at step 2, 3, 4 and 5 if a player belongs to one of these categories:
 
 * **copy**: a player visits the cell the most visited (the cell which contains the maximum number of coins),
-* **explore**: a player re-played a cell which does contain 15 and that he has already visited,
-* **no\_risk**: a player does not follow one of the two previous behaviours,
+* **explore strongly**: a player played a cell which has never been visited,
+* **explore weakly**: a player played a cell which has been visited by other players but is not among the most visited cells,
+* **no\_risk**: a player does not follow one of the three previous behaviours,
 
 ```{r, echo = F}
 copy_or_not <- function (file, cell_visited) {
@@ -1054,13 +1127,24 @@ copy_or_not <- function (file, cell_visited) {
     for (j in 2:5) {
       # repeat or not a cell 
       if (file[k, paste0("cell_", j)] %in% file[k, paste0("cell_", 1:(j - 1))] &
-          file[k, paste0("gain_", j)] == 15 & !(99 %in% file[k, paste0("gain_", 1:(j - 1))] )) {
+          file[k, paste0("gain_", j)] == 15 & !(99 %in% file[k, paste0("gain_", 1:(j - 1))]) ) {
         file[k, paste0("copy", j)] <- "no_risk"
       } else {
         # exploring the most visited cell
         # at step j, we look at the cells the most visited cells
         order_step <- rev(
           sort(cell_visited[which(cell_visited$round_p == file$round_p[k])[j - 1], 3:11]))
+        names_step <- names(order_step) 
+        order_step <- as.numeric(order_step) 
+        unique_order <- unique(order_step)
+        # in case of equality, we permute the values
+        new_names <- NULL
+        for (i in unique_order) {
+          i_ind <- which(order_step == i)
+          set.seed(k*i)
+          new_names <- c(new_names, sample(names_step[i_ind]))
+        }
+        names(order_step) <- new_names
         choice_1 <- substr(names(order_step[1]), 3, 5) 
         if (!(99 %in% file[k, paste0("gain_", 1:(j - 1))])) {
           if (file[k, paste0("cell_", j)] == choice_1 & 
@@ -1074,32 +1158,44 @@ copy_or_not <- function (file, cell_visited) {
                     !(choice_2 %in% file[k, paste0("cell_", 1:(j - 1))])) { 
                   file[k, paste0("copy", j)] <- "copy"
                   } else { 
-                    if (choice_2 %in% file[k, paste0("cell_", 1:(j - 1))]) {
+                    if (choice_2 %in% file[k, paste0("cell_", 1:(j - 1))] & j > 2) {
                       # we look at the 3rd choice
                       choice_3 <- substr(names(order_step[3]), 3, 5)
                       if (file[k, paste0("cell_", j)] == choice_3 & 
                           !(choice_3 %in% file[k, paste0("cell_", 1:(j - 1))])) {
                         file[k, paste0("copy", j)] <- "copy"
                         } else { 
-                          if (choice_3 %in% file[k, paste0("cell_", 1:(j - 1))]) {
+                          if (choice_3 %in% file[k, paste0("cell_", 1:(j - 1))] & j > 3) {
                             # we look at the 4th choice
                             choice_4 <- substr(names(order_step[4]), 3, 5) 
                             if (file[k, paste0("cell_", j)] == choice_4 & 
                                 !(choice_4 %in% file[k, paste0("cell_", 1:(j - 1))]) ) {
                               file[k, paste0("copy", j)] <- "copy"
                               } else {
-                                file[k, paste0("copy", j)] <- "explore"
+                                if (order_step[paste0("c_", file[k, paste0("cell_", j)])] == 0)
+                                  file[k, paste0("copy", j)] <- "explore_strong"
+                                else
+                                  file[k, paste0("copy", j)] <- "explore_weak"
                                 }
                             } else {
-                              file[k, paste0("copy", j)] <- "explore"
+                                if (order_step[paste0("c_", file[k, paste0("cell_", j)])] == 0)
+                                  file[k, paste0("copy", j)] <- "explore_strong"
+                                else
+                                  file[k, paste0("copy", j)] <- "explore_weak"
                             }
                           }
                       } else {
-                        file[k, paste0("copy", j)] <- "explore"
+                        if (order_step[paste0("c_", file[k, paste0("cell_", j)])] == 0)
+                          file[k, paste0("copy", j)] <- "explore_strong"
+                        else
+                          file[k, paste0("copy", j)] <- "explore_weak"
                       } 
                     }
                 } else {
-                  file[k, paste0("copy", j)] <- "explore"
+                  if (order_step[paste0("c_", file[k, paste0("cell_", j)])] == 0)
+                    file[k, paste0("copy", j)] <- "explore_strong"
+                  else
+                    file[k, paste0("copy", j)] <- "explore_weak"
                 }
             }
         }
@@ -1121,8 +1217,7 @@ For representing the data, we first tidy the data (codes presented in .Rmd file)
 ```{r, echo = F}
 gather_file_15_R1 <- file_15_R1_copy %>%
   select(copy2, copy3, copy4, copy5, gain) %>%
-  gather(gain)
-names(gather_file_15_R1)[2] <- "step"
+  gather(step, value, copy2:copy5)
 ```
 
 We compute the mean and standard deviation obtained at each step and depending on the fact that a player explored new cells or not (codes presented in .Rmd file). 
@@ -1144,7 +1239,6 @@ names(stat_gather_file_15_R1)[3:5] <- c("gain", "sd", "length")
 
 We plot in y-axis the gain per round and in x-axis the steps. We represent in red (resp. in green resp. in blue) the gain per round obtained when the player played the most visited cell visited (resp. when he explored resp. when he took no risk) knowing that the player had the opportunity to do it. We plot the gain per round in grey obtained by people who did not have the opportunity to visit (that means that they knew where the cell 99 was located).  
 
-
 ```{r, echo = F}
 ggplot(gather_file_15_R1, aes(x = step, y = gain, colour = value)) +
   geom_jitter(alpha = I(2/5), 
@@ -1160,23 +1254,21 @@ ggplot(gather_file_15_R1, aes(x = step, y = gain, colour = value)) +
 
 **Interesting remarks concerning the figure:**
 
-* at step 2, there are more people who prefer exploring ($n=247$) rather copying ($n=134$). We can see that at this step, it seems more interesting to explore rather copying. Indeed, at this step, there is absolutely no reason that the most visited cell contains the value 99. People who do copy at this step decreases the probability to find the value 99 at step 2, simply because this causes a decrease of the number of discovered cell. 
+* at step 2, it is interesting to remark that players adopt very different behaviours. Moreover, many of them ($n=132$) decided to play the most visited cell although there is obviously no reason to do it at this step . There are more people who prefer exploring strongly ($n=159$) rather exploring weakly ($n=90$). We can see that at this step, it seems more interesting to explore weakly. This is a result inverse to what we can expect in an optimal behaviour. That could be explained by the fact that people do not adopt a similar strategy all together.   
 
-* at step 3, 4 and 5 it is always more interesting to copy rather exploring or playing the value 15 knowing where it is. 
+* at step 3, 4 and 5 it is always more interesting to copy. Moreover, this is the choice which is the most followed by players (excepted at step 5).
 
-* at step 4 and 5, the differences between "exploring" and "re-playing 15" does not seem as important as it is the case under R0. 
-
-* at step 5, there are more players who prefer exploring ($n=97$) rather copying ($n=52$). 
+* at step 5, there are more players who prefer exploring ($n=97$) rather copying ($n=52$). We canno't observe big differences between "exploring" and "taking no risk".
 
 * The worst case which can happen is a situation where people by copying, do not have the opportunity to explore enough and hence do not sucess to find the value 99. We present here a example where this situation occured :
 
 ```{r}
-file_15_R1_copy[file_15_R1_copy$round_p == "T06_A_session_02", 
+file_15_R1_copy[file_15_R1_copy$round_p == "T05_A_session_01", 
                 c(paste0("gain_", 1:5), paste0("cell_", 1:5), paste0("copy", 2:5))]
 ```
 
 
-To test the hypothesis of equality of the means (here we test simultaneously the equality "copy" = "explore" = "no_risk") at each step, we use a non parametric test called "Kruskal-Wallis Rank Sum Test". It shows us that the differences of the means are significant at step 3, 4 and 5. It is not at step 2. 
+To test the hypothesis of equality of the means (here we test simultaneously the equality "copy" = "explore strongly"  = "explore weakly" = "no_risk") at each step, we use a non parametric test called "Kruskal-Wallis Rank Sum Test". It shows us that the differences of the means are significant at step 3, 4 and 5. It is not at step 2. 
 
 ```{r}
 (kruskal.test(gather_file_15_R1$gain[gather_file_15_R1$step == "copy2"] ~ 
@@ -1191,7 +1283,7 @@ To test the hypothesis of equality of the means (here we test simultaneously the
 
 
 
-### The effect of copying VS exploring VS re-playing 15 on the final gain 
+### The effect of copying VS exploring strongly VS exploring weakly VS re-playing 15 on the final gain 
 
 In this section, we aggregate the results per player and consider thus the final gain. There are 30 players and for doing a statistical analysis on these players, we need to define some variables for each player.
 
@@ -1228,7 +1320,7 @@ We rank here the final gain obtained by the 20 players :
 sort(players_15_R1$final_gain)
 ```
 
-We can remark that there are 7 players who obtained a final gain upper than the theoretical optimal final gain. 
+We can remark that there are 8 players who obtained a final gain upper than the theoretical optimal final gain. 
 
 
 ####  Create new variables per player
@@ -1237,21 +1329,21 @@ We create the following variables per player :
 
 * The dependent variable is the final gain. 
 
-* The characterestics we are interested in are the behaviours of the players at step 2, 3, 4 and 5. For example, if we look at the player "A1" in session 01, we observe the following behaviour at step 2: he copied only 2 times whereas he explored 11 times. Hence, this player will be considered as an "explorer" at step 2.   
+* The characterestics we are interested in are the behaviours of the players at step 2, 3, 4 and 5. For example, if we look at the player "A1" in session 01, we observe the following behaviour at step 2: he copied only 2 times whereas he explored "strongly" 8 times. Hence, this player will be considered as an "explorer_strongly" at step 2.   
 
 ```{r, echo = F}
 table(file_15_R1_copy[file_15_R1_copy$session == "session_01" & 
                   file_15_R1_copy$player == "A1", "copy2"])
 ```
 
-At step 3, because of the equality (4 times "copy" and 4 times "explore"), we will choose randomly his behaviour :  
+At step 3, he will be considered as a copyer (4 times "copy") :
 
 ```{r, echo = F}
 table(file_15_R1_copy[file_15_R1_copy$session == "session_01" & 
                   file_15_R1_copy$player == "A1", "copy3"])
 ```
 
-**Important remark:** we can suppose that if some players change their behaviour, this is probably due to the fact that they adapt their strategy to the present round. For example, depending on the maximum number of coins let on a cell, the player might play differently from a round to another. Such a behaviour is not taken into account in this part. Indeed, we create a variable based on a "general" behaviour at every step.  
+**Important remark:** we can suppose that if some players change their behaviour, this is probably due to the fact that adapt their strategy to the present round. For example, depending on the maximum number of coins let on a cell, the player might play differently from a round to another. Such a behaviour is not taken into account in this part. Indeed, we create a variable based on a "general" behaviour at every step.  
 
 At step 4, he will be considered as a "copyer" : 
 
@@ -1260,7 +1352,7 @@ table(file_15_R1_copy[file_15_R1_copy$session == "session_01" &
                   file_15_R1_copy$player == "A1", "copy4"])
 ```
 
-At step 5, he will be considered as an "explorer" : 
+At step 5, he will be considered as an "explorer_strong" : 
 
 ```{r}
 table(file_15_R1_copy[file_15_R1_copy$session == "session_01" & 
@@ -1308,49 +1400,57 @@ players_15_R1 <- filter(players_15_R1, ! (player == "B4" &  session == "session_
 
 ####  Exploratory analysis 
 
-**At step 2 :** we analyse now the behaviours of the players at step 2. Most of them prefer exploring (18 players) rather copying (9 players). Only one player prefer to keep the value 15 (note that this behaviour does not help the group because other players could then think that the cell 99 is at the cell the player is playing again). 
+**At step 2 :** we analyse now the behaviours of the players at step 2. Most of them prefer exploring strongly (13 players) rather copying (12 players). Only one player prefer to keep the value 15 (note that this behaviour does not help the group because other players could then think that the cell 99 is at the cell the player is playing again). 
 
 ```{r}
 table(players_15_R1$step_2)
 ```
 
-Besides, the average mean of the final gain obtained by the players who have a tendency to copy (3773) is larger than the average mean of the group who explores (3472) or the group who takes no risk (3108). This result is the opposite of what we have seen previously.  
+Besides, the average mean of the final gain obtained by the players who have a tendency to explore strongly (3644) is larger than the average mean of the group who copies (3528), explores weakly (3376) or takes no risk (3108). 
 
 The final gain per group : 
 ```{r}
 tapply(players_15_R1$final_gain, players_15_R1$step_2, mean)
 ```
 
-**At step 3 and 4:** there are no players who decide to play 15 again. Besides, we cross the behaviours at step 3 and 4 and create a new variable which consists in "copying" if players copy both at step 3 and 4, "exploring" if they explore at step 3 and 4 and "both" when they copy/explore or explore/copy (codes presented in the .Rmd file). 
+**At step 3 and 4:**
 
-There is a majority of players who copy (13) then explore (9) and there are 6 players who eplore and copy or copy and explore. 
+```{r}
+table(players_15_R1$step_3, players_15_R1$step_4)
+```
+
+
+we cross the behaviours at step 3 and 4 and create a new variable which consists in "copying" if players copy both at step 3 and 4, "others" if they do not only copy (codes presented in the .Rmd file). 
+
+There is a majority of players who copy (18) than do something different (10). 
 
 ```{r, echo = F}
 players_15_R1$step_3_and_4 <- ifelse(players_15_R1$step_3 == "copy" & players_15_R1$step_4 == "copy",
-                                     "copy", ifelse(players_15_R1$step_3 == "explore" & players_15_R1$step_4 == "explore", "explore", "both"))
+                                     "copy", "others")
+                                     # ifelse(substr(players_15_R1$step_3, 1, 7) == "explore" & substr(players_15_R1$step_4, 1, 7) == "explore", "explore", "both"))
 ```
 
 ```{r}
 table(players_15_R1$step_3_and_4)
 ```
 
-The average mean of the final gain is higher for players who do copy (3699) rather exploring (3273) or doing both (3537): 
+The average mean of the final gain is higher for players who do copy (3597) rather doing something else (3482) : 
 ```{r}
 tapply(players_15_R1$final_gain, players_15_R1$step_3_and_4, mean)
 ```
 
-**At step 5:** most of players prefer to explore. The frequency : 
+**At step 5:** most of players prefer to explore weakly. The frequency : 
 ```{r}
 table(players_15_R1$step_5)
 ```
 
-The final gain per group is higher for people who explore (3613) rather copying (3394) or plays 15 again (3246). Thus, this result is also opposite to the one seen previously.  
+The final gain per group is higher for people who explore strongly (4008) rather taking no risk (3528), copying (3452) or explore weakly (3483).  
 
 ```{r}
 tapply(players_15_R1$final_gain, players_15_R1$step_5, mean)
 ```
 
-**Behaviours adopted across the time:** here we look if there is a better strategy to adopt during the round. For example, is it better to "explore" at step 2, then "copy" at step 3/4 and finally "explore" at step 5. 
+**Behaviours adopted across the time:** here we look if there is a better strategy to adopt during the round. For example, is it better to "explore stongly" at step 2, then "copy" at step 3/4 and finally "explore weakly" at step 5. 
 
 We present all the observed behaviours at step 2/step 3,4/step 5 and rank them with the average final gain: 
 
@@ -1367,8 +1467,8 @@ arrange(temp, final_gain)
 
 **Interpretation:** by considering our few number of observations, the remarks we are giving here might be used with precautions. 
 
-* the two worst strategy consists in explore/explore/copy, no_risk/copy/no_risk. 
-* the two best strategy consists in explore/both/no_risk and copy/copy/copy.
+* the three worst strategy consists in copy/others/copy, no_risk/copy/no_risk, explore_weak/others/explore_weak. 
+* the two best strategy consists in explore_strong/copy/explore_strong and explore_strong/explore/explore_weak.
 
 
 ####  Machine Learning 
@@ -1386,14 +1486,22 @@ res_tree <- rpart(formula = final_gain ~ step_2 + step_3_and_4 + step_5, data = 
 rpart.plot(res_tree)
 ```
 
-**Interpretation:** at the first step, the tree discriminates the population into two groups, one group who does explore at step 3 and 4 (on the left) and another group who does not (it means that there are the players who copy or do both). The group on the right has a lower average mean (3658) than the group on the left (3274). The discrimination continues sub-group by sub-group until the final node which gives the percentage of observations and the average mean of the final gain. Usually, we look the observations which fall in the finale nodes with the highest (resp. lowest) predicted values. In our case, the two final nodes with highest values correspond to :
+**Interpretation:** at the first step, the tree discriminates the population into two groups, one group who does copy/explore weakly at step 5 (on the left) and another group who does not (it means that there are the players who explore strongly/takes no risk). The group on the right has a lower average mean (3918) than the group on the left (3474) which is a final node. The discrimination continues sub-group by sub-group until the final node which gives the percentage of observations and the average mean of the final gain. Usually, we look the observations which fall in the finale nodes with the highest (resp. lowest) predicted values. In our case, there three final nodes :  
 
-* (last node in dark blue) : players who do copy at step 3 and 4, copy at step 2, 
+* Last node in dark blue whith the highest value (4101) : 3 players who explore strongly/takes no risk at step 5 and do not copy at step 2, 
 
-* (5th node in dark blue) : players who copy at step 3 and 4, explore at step 2 and copy at step 5. 
+* Middle node with middle value : 3 players who explore strongly/takes no risk at step 5 and do copy at step 2, 
+
+* 1st node with small values (3474) : 21 players who copy or explore weakly at step 2. 
 
 
 ### Conclusion under R1
+
+We propose an optimal behaviour under R1. It seems to give good results although it could be probably improved by taking into account some other factors such as the number of cell visited. 
+
+The main key under R1 seems to be able to explore the maximum number of cells at step 1 and 2 by visiting the cells which have not been visited yet and then to adopt a strategy of copying at step 3, 4, 5 when it is possible. 
+
+When copying at step 3, 4 and 5, the problem is that if the cell 99 has not been found, players will just visit the wrong cells. Thus, at step 5, it is possible that the cell 99 has not been visited yet. Hence, players should not hesitate to explore cells which have not been visited yet when they have already copied at previous steps without succeeding. 
 
 ## Analysis under R2
 
@@ -1412,11 +1520,11 @@ At each step, the players have the opportunity to let (or not to let) a coin on 
 
 ### Optimal strategy for the group 
 
-It seems that the best strategy for the group under R2 consists in :
+It seems that the best strategy for the group under R2 consists of :
 
-* a player lets a coin only and only if he found the cell 99.
+* leaving a coin only and only if players found the cell 99.
 
-* a player explores new cell until the cell 99 has been discovered by himself or someone else. 
+* exploring cells which have not been visited until the cell 99 has been discovered by somebody of the group. 
 
 Let simulate such a behaviour by using the function *simu_distrib_R2()* (codes are in the .Rmd file).
 
@@ -1428,11 +1536,19 @@ simu_distrib_R2 <- function(game) {
   find_99 <- FALSE
   gain <- matrix(0, 5, 5)
   step <- 1  
+  nb_cell <- numeric(9)
   
   # Loop 
-  while (!find_99 & step <=5) {
+  while (!find_99 & step <= 5) {
+    proba_step_k <- ifelse(nb_cell == 0, 1, 0)  
     for (k in 1:5) {
-    simu_k <- rmultinom(1, size = 1, prob = proba_cell[, k])
+      if(sum(proba_step_k) == 0) {
+        simu_k <- rmultinom(1, size = 1, prob = proba_cell[, k])
+      } else {
+        simu_k <- rmultinom(1, size = 1, prob = proba_step_k)
+      }
+        
+    nb_cell <- nb_cell + apply(simu_k, 1, sum)
     proba_cell[, k] <- proba_cell[, k] - simu_k
     gain[k, step] <- c(0, 0, 0, 0, 0, game, game, game, 99)[which(simu_k == 1)]
     }
@@ -1452,19 +1568,21 @@ simu_distrib_R2 <- function(game) {
 }
 ```
 
-Simulation for several games:
+We will replicate 100,000 sessions:
 
-```{r}
+```{r, echo = F}
 distrib_th_15_R2 <- NULL
 for (k in 1:20000)
   distrib_th_15_R2 <- rbind(distrib_th_15_R2, simu_distrib_R2(15))
 ```
 
 ```{r, echo = F}
-tab_15_R2 <- apply(distrib_th_15_R2, 2, table)/nrow(distrib_th_15_R2)
-colnames(tab_15_R2) <- paste0("step_", 1:5)
-gather_tab_15_R2 <- gather(as.data.frame(tab_15_R2))
-gather_tab_15_R2$gain <- factor(rep(c(0, 15, 99), 5))
+tab_15_R2 <- apply(distrib_th_15_R2, 2, table)
+gather_tab_15_R2 <- data.frame(value = unlist(tab_15_R2)/nrow(distrib_th_15_R2), 
+                               gain = names(unlist(tab_15_R2)), 
+                               step = paste0("step_", unlist(mapply(rep, 1:5, 
+                                                                    each = sapply(tab_15_R2, length))))
+)
 gather_tab_15_R2$pos <- NULL
 gather_tab_15_R2$pos[gather_tab_15_R2$gain == "0"] <- 0.99
 gather_tab_15_R2$pos[gather_tab_15_R2$gain == "99"] <- 
@@ -1474,18 +1592,19 @@ gather_tab_15_R2$pos[gather_tab_15_R2$gain == "15"] <-
 ```
 
 ```{r, echo = F}
-ggplot(gather_tab_15_R2, aes(y = value, x = key, fill = gain)) + 
+ggplot(gather_tab_15_R2, aes(y = value, x = step, fill = gain)) + 
   geom_bar(stat = "identity") + 
-  geom_text(aes(x = key, y = pos, label = paste0(round(value * 100, 2) ,"%")), 
+  geom_text(aes(x = step, y = pos, label = paste0(round(value * 100, 2) ,"%")), 
               size = 4) 
 ```
 
-**Remark:** the distribution is obviously advantageous for the group. However, comparing to the empirical distribution, this is clearly not the behaviour which has been adopted by the players. This can be explained by the fact that if all players behave similarly, they optimize the total gain, but the probability to have the best score at the end of a session among the players is the same for all. Hence, if players first think about how they could obtain a better score than other, they might adopt a strategy which is different from the one adopted by others. 
+**Remark:** at step 5, the probability that a player found 99 is 1. Thus, this strategy is obviously advantageous for the group. Comparing to the empirical distribution, this is clearly not the behaviour which has been adopted by the players. This can be explained by the fact that if all players behave similarly, they optimize the total gain, but the probability to have the best score at the end of a session among the players is the same for all. Hence, if players first think about how they could obtain a better score than other, they might adopt a strategy which is different from the one adopted by others. 
 
 ### Example of an optimal strategy for one player  
 
-To illustrate our idea, we simulate a game where 4 players adopt the previous strategy and one player decide to never let a coin although he will play the most visited cell. In this situation, it is interesting to notice that other players will not necessarly remark than player 5 is rigging the game because he does not give a bad information. Here, we are interested to know the final gain this players will obtain at the end of the 15 round and what is his probability to win the session. We program the function *simu\_gain\_R2\_b()* (codes availabes in the .Rmd file).
+To illustrate our idea, we will simulate a game where 4 players adopt the previous strategy and one player decide to never leave a coin. However, he will adopt the strategy which consists of playing the most visited cell. In this situation, it is interesting to notice that other players will not necessarily remark than player 5 is rigging the game because he does not give a bad information. Here, we are interested to know the final gain this players will obtain at the end of the 15th round and what is his probability to win the session. We program the function *simu\_gain\_R2\_b()* (codes availabes in the .Rmd file).
 
+      
 ```{r, echo = F}
 simu_gain_R2_b <- function(game) {
   # this function simulates a session under R2 
@@ -1495,14 +1614,32 @@ simu_gain_R2_b <- function(game) {
   
   for (i in 1:15) {
     step <- 1  
+    nb_cell <- numeric(9)
     proba_cell <- matrix(1, 9, 5)
     find_99 <- FALSE
     gain <- matrix(0, 5, 5)
     # Loop 
     while (!find_99 & step <=5) {
+      proba_step_k <- ifelse(nb_cell == 0, 1, 0)  
       # simulate the 5 players
       for (k in 1:5) {
-        simu_k <- rmultinom(1, size = 1, prob = proba_cell[, k])
+        
+        if(sum(proba_step_k) == 0) {
+          simu_k <- rmultinom(1, size = 1, prob = proba_cell[, k])
+          } else {
+            if (k != 5) {
+              simu_k <- rmultinom(1, size = 1, prob = proba_step_k)
+            } else {
+              if (sum(simu_k) == 1) {
+                simu_k <- rmultinom(1, size = 1, prob = proba_cell[, k])                  
+              } else {
+                simu_k <- rmultinom(1, size = 1, prob = proba_step_k)  
+              }
+            }
+          }
+        
+        nb_cell <- nb_cell + apply(simu_k, 1, sum)
+            
         if (k == 5 & simu_k[9] == 1)
           proba_cell[, k] <- c(0, 0, 0, 0, 0, 0, 0, 0, 1)
         else
@@ -1529,30 +1666,30 @@ simu_gain_R2_b <- function(game) {
 }
 ```
   
-Simulation for several games:
+We will replicate 1000 times:
 
-```{r}
+```{r, echo = F}
 distrib_gain_15_R2 <- NULL
 for (k in 1:1000)
   distrib_gain_15_R2 <- rbind(distrib_gain_15_R2, simu_gain_R2_b(15))
 ```
 
-The probability for player 5 to win the session is much more higher than :
+The probability for player 5 to win the session is much more higher for him/her than the other players :
 
-```{r}
+```{r, echo = F}
 table(apply(distrib_gain_15_R2, 1, which.max))/1000 
 ```
 
-His average mean of the final gain is also quite higher for the player 5:
+The average mean of the final gain is also quite higher for the player 5:
 
-```{r}
+```{r, echo = F}
 apply(distrib_gain_15_R2, 2, mean)
 ```
 
 
 ### Analysis of the behaviours of the players under R2 
 
-We compute here the probability to let a coin after playing the cell 99 depending on the step.
+We compute here the probability to leave a coin after playing the cell 99 depending on the step.
 
 ```{r, echo = F}
 file_15_R2 <- filter(file_15, rule == "R2") 
@@ -1597,24 +1734,24 @@ ggplot(data = proba_say_1, aes(x = step, y = freq, group = gain, color = gain)) 
    geom_text(aes(label = eff), nudge_y = 0.02)
 ```
 
-**Interpretation:** at step 1, 66 players found the value 99. $34.85\%$ of them let a coin on the cell. Hence, it seems that players let most frequently a coin when they found 15 or 0 rather than 99. Thus, it could be that in these conditions, it is not interesting anymore to play the most visited cell. This is what we are going to check now. 
+**Interpretation:** at step 1, 66 players found the value 99. $34.85\%$ of them left a coin on the cell. Comparing to the value 0 and 15, it seems that players left more frequently a coin when they found 15 or 0 rather than 99. Thus, in these conditions, it is difficult to say when it is more interesting to play the most visited cell or to explore. This is what we are going to check now. 
 
 
-### Analysis of the number of coins let depending on the values 0, 15 or 99.
+### Analysis of the number of coins left depending on the values 0, 15 or 99.
 
-From the previous figure, we can deduct the expected number of coins let by players after each step. How did we do that : there are 197 players who let a coin after obtaining the value 0. To get the expected number of coins for any cell which contains 0, we simply divide 197 by 120 (120 = 15 rounds $\times$ 2 parallel session $\times$ 4 different sessions). As there are 5 cells which contain the value 0, we divide 197/120 by 5. 
+From the previous figure, we can deduct the "empirical" expected number of coins left by players after each step. How did we do that : there are 197 players who let a coin after obtaining the value 0. To get the "empirical" expected number of coins for any cell which contains 0, we simply divide 197 by 120 (120 = 15 rounds $\times$ 2 parallel session $\times$ 4 different sessions). As there are 5 cells which contain the value 0, we divide 197/120 by 5. 
 
-**Remark:** as the players have the choice to let a coin or not, the sum of the expected values is now different from 5. For example at step 1, it is equal to 2.88. It is interesting to notice that under R0, a player who would like to use the behaviours of the others, should visit the cell which has been the less visited.   
+**Remark:** as the players have the choice to leave a coin or not, the sum of the "empirical" expected values is now different from 5. For example at step 1, it is equal to 2.88. It is interesting to notice that at step 2 under R2, a player who would like to use the behaviours of the others, should visit the cell which has been the less visited.   
 
 ```{r, echo = F}
 plot(2, 2, xlim = c(0, 3), ylim = c(0, 3), type = "n", xlab = "", ylab = "", 
-     xaxt = "n", yaxt = "n", main = "Expected number of coins let at step 1")
+     xaxt = "n", yaxt = "n", main = "Expected number of coins left at step 1")
 abline(v = 1:2)
 abline(h = 1:2)
 text(rep(0.5:2.5, 3), rep(2.9:0.9, each = 3), 
      paste("gain =", c(rep("0", 5), rep("15", 3), "99")))
 text(rep(0.5:2.5, 3), rep(2.3:0.3, each = 3), 
-     paste("coin =", c(rep(0.35, 5), rep(0.33, 3), 0.19) ))
+     paste("coin =", c(rep(0.33, 5), rep(0.35, 3), 0.19) ))
 ```
 
 After the second step, we remark that the cell which contains 99 is still the one where we can find the smallest number of coins:  
@@ -1622,7 +1759,7 @@ After the second step, we remark that the cell which contains 99 is still the on
 ```{r, echo = F}
 op <- par(mfrow = c(1, 2))
 plot(2, 2, xlim = c(0, 3), ylim = c(0, 3), type = "n", xlab = "", ylab = "", 
-     xaxt = "n", yaxt = "n", main = "Expected number of coins let at step 2")
+     xaxt = "n", yaxt = "n", main = "Expected number of coins left at step 2", cex.main = 0.7)
 abline(v = 1:2)
 abline(h = 1:2)
 text(rep(0.5:2.5, 3), rep(2.9:0.9, each = 3), 
@@ -1631,13 +1768,13 @@ text(rep(0.5:2.5, 3), rep(2.3:0.3, each = 3),
      paste("coin =", c(rep(0.24, 5), rep(0.39, 3), 0.325)), cex = 0.5)
 
 plot(2, 2, xlim = c(0, 3), ylim = c(0, 3), type = "n", xlab = "", ylab = "", 
-     xaxt = "n", yaxt = "n", main = "Information given after step 2")
+     xaxt = "n", yaxt = "n", main = "Information given after step 2", cex.main = 0.7)
 abline(v = 1:2)
 abline(h = 1:2)
 text(rep(0.5:2.5, 3), rep(2.9:0.9, each = 3), 
      paste("gain =", c(rep("0", 5), rep("15", 3), "99")), cex = 0.5)
 text(rep(0.5:2.5, 3), rep(2.3:0.3, each = 3), 
-     paste("coin =", c(rep(0.59, 5), rep(0.72, 3), 0.515)), cex = 0.5)
+     paste("coin =", c(rep(0.57, 5), rep(0.74, 3), 0.515)), cex = 0.5)
 par(op)
 ```
 
@@ -1646,7 +1783,7 @@ After step 3, the cell which contains 99 is now the one with the highest number 
 ```{r, echo = F}
 op <- par(mfrow = c(1, 2))
 plot(2, 2, xlim = c(0, 3), ylim = c(0, 3), type = "n", xlab = "", ylab = "", 
-     xaxt = "n", yaxt = "n", main = "Expected number of coins let at step 3")
+     xaxt = "n", yaxt = "n", main = "Expected number of coins left at step 3", cex.main = 0.7)
 abline(v = 1:2)
 abline(h = 1:2)
 text(rep(0.5:2.5, 3), rep(2.9:0.9, each = 3), 
@@ -1655,13 +1792,13 @@ text(rep(0.5:2.5, 3), rep(2.3:0.3, each = 3),
      paste("coin =", c(rep(0.18, 5), rep(0.32, 3), 0.67)), cex = 0.5)
 
 plot(2, 2, xlim = c(0, 3), ylim = c(0, 3), type = "n", xlab = "", ylab = "", 
-     xaxt = "n", yaxt = "n", main = "Information given after step 3")
+     xaxt = "n", yaxt = "n", main = "Information given after step 3", cex.main = 0.7)
 abline(v = 1:2)
 abline(h = 1:2)
 text(rep(0.5:2.5, 3), rep(2.9:0.9, each = 3), 
      paste("gain =", c(rep("0", 5), rep("15", 3), "99")), cex = 0.5)
 text(rep(0.5:2.5, 3), rep(2.3:0.3, each = 3), 
-     paste("coin =", c(rep(1.185, 5), rep(1.04, 3), 1.185)), cex = 0.5)
+     paste("coin =", c(rep(0.75, 5), rep(1.06, 3), 1.185)), cex = 0.5)
 par(op)
 ```
 
@@ -1670,53 +1807,50 @@ After step 4, the cell which contains 99 is still the one with the highest numbe
 ```{r, echo = F}
 op <- par(mfrow = c(1, 2))
 plot(2, 2, xlim = c(0, 3), ylim = c(0, 3), type = "n", xlab = "", ylab = "", 
-     xaxt = "n", yaxt = "n", main = "Expected number of coins let at step 4")
+     xaxt = "n", yaxt = "n", main = "Expected number of coins left at step 4", cex.main = 0.7)
 abline(v = 1:2)
 abline(h = 1:2)
 text(rep(0.5:2.5, 3), rep(2.9:0.9, each = 3), 
      paste("gain =", c(rep("0", 5), rep("15", 3), "99")), cex = 0.5)
 text(rep(0.5:2.5, 3), rep(2.3:0.3, each = 3), 
-     paste("coin =", c(rep(0.15, 5), rep(0.26, 3), 1.08)), cex = 0.5)
+     paste("coin =", c(rep(0.16, 5), rep(0.26, 3), 1.08)), cex = 0.5)
 
 plot(2, 2, xlim = c(0, 3), ylim = c(0, 3), type = "n", xlab = "", ylab = "", 
-     xaxt = "n", yaxt = "n", main = "Information given after step 4")
+     xaxt = "n", yaxt = "n", main = "Information given after step 4", cex.main = 0.7)
 abline(v = 1:2)
 abline(h = 1:2)
 text(rep(0.5:2.5, 3), rep(2.9:0.9, each = 3), 
      paste("gain =", c(rep("0", 5), rep("15", 3), "99")), cex = 0.5)
 text(rep(0.5:2.5, 3), rep(2.3:0.3, each = 3), 
-     paste("coin =", c(rep(1.335, 5), rep(1.3, 3), 2.265)), cex = 0.5)
+     paste("coin =", c(rep(0.91, 5), rep(1.32, 3), 2.265)), cex = 0.5)
 par(op)
 ```
 
-**Conclusion:** it seems that a player who played the less visited cell after step 1 and step 2 and the most visited cell after step 3 and step 4, would optimize his chance to find 99. We are now looking if this is really the case on our data. 
+**Conclusion:** it seems that a player who played the less visited cell after step 1 and step 2 and the most visited cell after step 3 and step 4, would optimize his chance to find 99. We are now looking if this is really the case in our data. 
 
 ### Behaviours among the players under R2
 
-First, we apply the previous function *cell\_visited()* which allows us to see how often a cell has been visited per round. For doing this, we need to count the number of visits per cell at each step, for given players (A or B) per round and per session:
+First, we will apply the previous function *cell\_visited()* which allows us to see how often a cell has been visited per round. 
 
-```{r}
+```{r, echo = F}
 file_15_R2$round_p <- paste0(file_15_R2$round, "_", substr(file_15_R2$player, 1, 1),
                              "_", file_15_R2$session)
 ```
 
-```{r}
+```{r, echo = F}
 cell_visited_R2 <- cell_visited(file_15_R2)
 ```
 
-We apply our data to the previous function :
-
-```{r}
+```{r, echo = F}
 file_15_R2_copy <- copy_or_not(file_15_R2, cell_visited_R2)
 ```
 
-For representing the data, we first tidy the data (codes presented in the .Rmd file).
+For representing the data, we will tidy the data (codes presented in the .Rmd file).
 
 ```{r, echo = F}
 gather_file_15_R2 <- file_15_R2_copy %>%
   select(copy2, copy3, copy4, copy5, gain) %>%
-  gather(gain)
-names(gather_file_15_R2)[2] <- "step"
+  gather(step, value, copy2:copy5)
 ```
 
 We compute the mean and standard deviation obtained at each step and depending on the fact that a player explored new cases or not (codes presented in the .Rmd file).
@@ -1750,9 +1884,18 @@ ggplot(gather_file_15_R2, aes(x = step, y = gain, colour = value)) +
             position = position_dodge(width = 0.5)) 
 ```
 
-**Interpretation:** it seems that the advantageous under R1 which consists in playing the most visited cell is not correct anymore under R2 excepted at step 5. Indeed, as seen previously, the number of coins let on the cell 99 seems to be big enough to detect a potential tendency. This can be confirmed by the following $\chi^2$ test.
+**Interpretation:** we can do the following remarks.
 
-```{r}
+* at any step, the number of players who explore strongly is the most important. In other terms, players seem to play as if they did not trust the information given by others. 
+
+* at step 2, 3 and 4, there is no strategy which seems to give better results than the others. 
+
+* at step 5, it seems more interesting to copy rather doing something else.
+
+The statistical test of comparasion of the means between the groups tends to give the same results : there are no significant differences at step 2 and 3. There is a small difference at step 4 and a significant difference at step 5.
+
+
+```{r, echo = F}
 (kruskal.test(gather_file_15_R2$gain[gather_file_15_R2$step == "copy2"] ~
 factor(gather_file_15_R2$value[gather_file_15_R2$step == "copy2"])))
 (kruskal.test(gather_file_15_R2$gain[gather_file_15_R2$step == "copy3"] ~
@@ -1764,9 +1907,9 @@ factor(gather_file_15_R2$value[gather_file_15_R2$step == "copy5"])))
 ```
 
 
-### The effect of copying/exploring/re-playing 15 on the final gain
+### The effect of copying/exploring stongly or weakly/re-playing 15 on the final gain
 
-We are now looking for each player how he behaves during one session and trying to explain if its behaviours could explain the final gain. 
+We are now looking for each player how does he behave during one session and trying to explain if its behaviours could explain the final gain. 
 
 ```{r, echo = F}  
 players_15_R2 <- aggregate(file_15_R2_copy[, "gain"], 
@@ -1776,10 +1919,7 @@ players_15_R2 <- aggregate(file_15_R2_copy[, "gain"],
 names(players_15_R2)[3] <- "final_gain"
 ```
 
-We look at two diffrent behaviours :
-
-* Do the player copy, explore or takes no risk (codes presented in the .Rmd file)
-* Do the player give good or bad information to the others (codes presented in the .Rmd file)
+As under R1, we look at four different behaviours : copying, exploring strongly, exploring weakly, taking no risk (codes presented in the .Rmd file).
 
 ```{r, echo = F}  
 players_15_R2$step_2 <- NULL
@@ -1789,15 +1929,19 @@ players_15_R2$step_5 <- NULL
 
 for (k in 1:nrow(players_15_R2)) {
  # at step 2 
+  set.seed(k)
  players_15_R2$step_2[k] <- names(which.max(sample(rep(table(file_15_R2_copy[file_15_R2_copy$session == players_15_R2$session[k] & 
                    file_15_R2_copy$player == players_15_R2$player[k], "copy2"]), 2))))
  # at step 3
+   set.seed(k)
  players_15_R2$step_3[k] <- names(which.max(sample(rep(table(file_15_R2_copy[file_15_R2_copy$session == players_15_R2$session[k] & 
                    file_15_R2_copy$player == players_15_R2$player[k], "copy3"]), 2))))
  # at step 4 
+   set.seed(k)
  players_15_R2$step_4[k] <- names(which.max(sample(rep(table(file_15_R2_copy[file_15_R2_copy$session == players_15_R2$session[k] & 
                    file_15_R2_copy$player == players_15_R2$player[k], "copy4"]), 2))))
  # at step 5 
+   set.seed(k)
  players_15_R2$step_5[k] <- names(which.max(sample(rep(table(file_15_R2_copy[file_15_R2_copy$session == players_15_R2$session[k] & 
                    file_15_R2_copy$player == players_15_R2$player[k], "copy5"]), 2))))
 }
@@ -1807,12 +1951,71 @@ players_15_R2$step_4 <- as.factor(players_15_R2$step_4)
 players_15_R2$step_5 <- as.factor(players_15_R2$step_5)
 ```
 
-We define a player as :
 
-* a **collaborator** if he let majoritarly a coin when he found 99 and no coin when he found 0
-* a **liar** if he majoritarly let a coin when he found 0 and no coin when he found 99. 
+**At step 2:**
+Most of players have decided to explore strongly at step 2 (29/40):
+```{r, echo = F}  
+table(players_15_R2$step_2)
+```
+
+Besides, the average mean of the final gain obtained by the players who have a tendency to explore strongly (2802) is lower than the average mean of the group who has copied (3402). This could be explained by the fact that the players who copy at step 2 belong to some sessions where several players behave as "collaborators". In that case, we have that it is interesting to play the most visited cell 
+
+The final gain per group : 
+```{r, echo = F}  
+tapply(players_15_R2$final_gain, players_15_R2$step_2, mean)
+```
+
+**At step 3:**
+Most of players continued to explore strongly (22/40) at step 3 : 
+```{r, echo = F}  
+table(players_15_R2$step_3)
+```
+
+This time, the average mean of the final gain obtained by the players who had a tendency to explore strongly (2877) is slightly larger than the average mean of the group who have copied (2907). Players who have explored weakly have the highest score (3432). 
+
+The final gain per group : 
+```{r, echo = F}  
+tapply(players_15_R2$final_gain, players_15_R2$step_3, mean)
+```
+
+**At step 4:**
+Most of players continued to explore strongly (21/40) at step 4 :
+```{r, echo = F}  
+table(players_15_R2$step_4)
+```
+
+Besides, the average mean of the final gain obtained by the players who have a tendency to explore strongly (2815) is slightly lower than the average mean of the group who copies (3025). Players who explore weakly have the highest score (3175). 
+
+The final gain per group : 
+```{r, echo = F}  
+tapply(players_15_R2$final_gain, players_15_R2$step_4, mean)
+```
+
+**At step 5:**
+Most of players have decided to explore strongly at step 3 :
+```{r, echo = F}  
+table(players_15_R2$step_5)
+```
+
+The final gain per group tend to show that there are no big differences between the groups: 
+```{r, echo = F}  
+tapply(players_15_R2$final_gain, players_15_R2$step_5, mean)
+```
+
+### The effect of being a collaborator or a liar on the final gain
+
+We are going to give some marks depending on the actions done by the players during one session. Players will get the following marks :  
+
+* +5 if they leave coin when they found 99 
+* +2 if they don't leave a coin when they found 0
+* 0 if they don't leave a coin when they found 15
+* 0 if they leave a coin when they found 15
+* -3 if they don't leave a coin when they found 99
+* -4 if they leave a coin when they found 0
+
 
 ```{r, echo = F} 
+# option 1 
 file_15_R2_copy$info1 <- ifelse(file_15_R2_copy$gain_1 == 99 & file_15_R2_copy$action_1 == 1, "99_coin", 
                                 ifelse(file_15_R2_copy$gain_1 == 0 & file_15_R2_copy$action_1 == 0, "00_no_coin",
                                        ifelse(file_15_R2_copy$gain_1 == 99 & file_15_R2_copy$action_1 == 0, "99_no_coin",
@@ -1837,58 +2040,108 @@ file_15_R2_copy$info4 <- ifelse(file_15_R2_copy$gain_4 == 99 & file_15_R2_copy$a
                                               ifelse(file_15_R2_copy$gain_4 == 0 & file_15_R2_copy$action_4 == 1, "00_coin", 
                                                      ifelse(file_15_R2_copy$gain_4 == 15 & file_15_R2_copy$action_4 == 1, "15_coin", "15_no_coin")))))
 
+# initialisation 
+players_15_R2$mark_1 <- NULL
+players_15_R2$mark_2 <- NULL
+players_15_R2$mark_3 <- NULL
+players_15_R2$mark_4 <- NULL
+
 for (k in 1:nrow(players_15_R2)) {
  
- temp <- as.vector(as.matrix(file_15_R2_copy[file_15_R2_copy$session == players_15_R2$session[k] & 
-                   file_15_R2_copy$player == players_15_R2$player[k], c("info1", "info2", "info3", "info4")]))
- tab_temp <- table(substr(temp, 1, 2), substr(temp, 4, nchar(temp)))
- 
-  # at step 2 
- if(ncol(tab_temp) == 1) {
-   players_15_R2$info[k] <- "both"
- } else {
-  players_15_R2$info[k] <- ifelse(tab_temp[1, 2] > tab_temp[1, 1] & tab_temp[3, 1] > tab_temp[3, 2], "collaborator",
-                                    ifelse(tab_temp[1, 2] < tab_temp[1, 1] & tab_temp[3, 1] < tab_temp[3, 2], "liar",
-                                           "both"))
- }
+  for (step in 1:4) {
+    temp <- as.vector(as.matrix(file_15_R2_copy[file_15_R2_copy$session == players_15_R2$session[k] & 
+                                                  file_15_R2_copy$player == players_15_R2$player[k], paste0("info", step)])) # c("info1", "info2", 
+    players_15_R2[k, paste0("mark_", step)] <- 
+      length(which(temp == "00_coin")) * (-5) +
+      length(which(temp == "00_no_coin")) * (4) +
+      length(which(temp == "15_coin")) * (0) +
+      length(which(temp == "15_no_coin")) * (0) +
+      length(which(temp == "99_no_coin")) * (-4) +
+      length(which(temp == "99_coin")) * (5)
+  }
 }
 ```
 
-We know that there is 1 player who behave badly (see first section). We delete him for the statistical analysis because they have a too strong influence.
+We count the sum of good marks per player:
 
-```{r}
-players_15_R2 <- filter(players_15_R2, ! (player == "B4" &  session == "session_03") )
+* A player with a score higher than 75 is a "collaborator"
+* A player with a score lower than -75 is a "liar"
+* Otherwise, they will be considered as "both" 
+
+```{r, echo = F}
+players_15_R2$mark_final <- apply(players_15_R2[, c("mark_1", "mark_2", "mark_3", "mark_4")], 1, sum)
+players_15_R2$info <- ifelse(players_15_R2$mark_final >= 75, "collaborator", 
+                             ifelse(players_15_R2$mark_final <= -75, "liar", "both"))
 ```
 
-We first look at the variable which indicates if a player gave good or bad information. There are more "liar" than "collaborator": 
-```{r}
+
+
+Finally, we got the following statistics concerning the frequencies: 
+```{r, echo = F}  
 table(players_15_R2$info)
 ```
 
-The group of the liar seems to have a better final gain: 
-```{r}
-tapply(players_15_R2$final_gain, players_15_R2$info, mean)
+The final gains per group tend to show that the group of "liar" seems to get the higher gain: 
+```{r, echo = F}  
+tapply(players_15_R2$final_gain, list(players_15_R2$info), mean)
 ```
 
-Concerning the other variable (copy, explore, or keep 15), we cross it with the previous variable. We can see that most whatever the step, most of the **liar** do not try to copy, probably because they fear that other players do behave similarly. However, the two other groups (**collaborators** or **both**) try more oftenly to copy. 
 
-```{r}
-table(players_15_R2$step_2, players_15_R2$info)
-table(players_15_R2$step_3, players_15_R2$info)
-table(players_15_R2$step_4, players_15_R2$info)
-table(players_15_R2$step_5, players_15_R2$info)
+### The effects of being a collaborators/liars/both during a session
+
+We have the intuition that the final gain obtained by a player during a session will depend on the number of players who belong to one of these categories. For example, if we consider a session where all people behave as "collaborators", we can think that they should use a stratgey such as described in the theoetical framework. However, if there are a majority of "liars", players will understand it and will change their strategy.  
+
+By using the same system of notation that previously, we give a score to a session which is supposed to indicate how the players behave in this session. We compare it to the average mean of final gain obtained in a session. We have also added in the scatter plot the identity of the winner of the session to check what was his profile: 
+
+```{r, echo = F}
+x_lab <- tapply(players_15_R2$mark_final, paste0(players_15_R2$session, substr(players_15_R2$player, 1, 1)), sum)
+y_lab <- tapply(players_15_R2$final_gain, paste0(players_15_R2$session, substr(players_15_R2$player, 1, 1)), mean)
+
+plot(x_lab, y_lab, xlab = "score per session", 
+     ylab = "average mean of the final gain", pch = 16, 
+     col = "royalblue")
+text(x_lab, y_lab, c("both", "liar", "both", "liar", 
+                     "collaborator", "liar", "liar", "liar"),
+     pos = 3)
 ```
 
+We observe that there are 3 sessions where players behave as liars (the sessions with a score lower than -100) and 4 sessions where they behave much more as collaborators (the sessions with a score higher than -100). In this last case, we can observe that the final gain is much more higher. 
+
+In the following session, we will also try to use this information related to the fact that a session has been done by players who collaborate or not.
+
+
+```{r, echo = F}
+players_15_R2$session_info <- NULL
+players_15_R2$session_info[1:5] <- "collaborative_session"
+players_15_R2$session_info[6:10] <- "liar_session"
+players_15_R2$session_info[11:15] <- "liar_session"
+players_15_R2$session_info[16:20] <- "liar_session"
+players_15_R2$session_info[21:25] <- "collaborative_session"
+players_15_R2$session_info[26:30] <- "collaborative_session"
+players_15_R2$session_info[31:35] <- "liar_session"
+players_15_R2$session_info[36:40] <- "liar_session"
+```
+
+
+### Machine learning
+
+We know that there is one player who behave badly (see first section). We delete him for the statistical analysis because they have a too strong influence.
+
+```{r, echo = F} 
+players_15_R2 <- filter(players_15_R2, ! (player == "B4" &  session == "session_03") )
+```
 
 Finally, we do a regression tree trying to explain the final gain obtained by players depending on their behaviours.
 
 ```{r, echo = F}
-res_tree <- rpart(formula = final_gain ~ step_2 + step_3 + step_4 + step_5 + info, data = players_15_R2,
+res_tree <- rpart(formula = final_gain ~ step_2 + step_3 + step_4 + step_5 + info + session_info, data = players_15_R2,
               control = rpart.control(minsplit = 5, cp = 0.01))
 rpart.plot(res_tree)
 ```
 
 **Interpretation:** the variable which discriminates the most the players is the fact that player give good or bad information. The node with the higher final gain corresponds to players who are **liar** and do copy at the step 4.  
+
+### Conclusion under R2 
 
 # Statistical analysis of Stigmer 50
 
