@@ -578,15 +578,28 @@ Thanks to the following theoretical distribution of the gain per round :
 
 we can deducce what is the expected gain per round under R0 for an optimal behaviour. It corresponds simply to $\sum_xxPr[X=x]$ where $x$ corresponds to the possible values of the gain per round. It is here equal to: 
 
-```{r}
-sum(as.numeric(names(prop_tab)) * prop_tab)
+```{r, echo = F}
+(esp_R0 <- sum(as.numeric(names(prop_tab)) * prop_tab))
 ```
 
 When mutiplying this number by 15, we obtain the theoretical optimal final gain 
 
-```{r}
+```{r, echo = F}
 (opti_15_R0 <- 15 * sum(as.numeric(names(prop_tab)) * prop_tab))
 ```
+
+**Remark:** we can also compute the standard deviation for a round
+
+```{r, echo = F}
+esp_R0_2 <- sum(as.numeric(names(prop_tab))^2 * prop_tab)
+(sd_R0 <- sqrt(esp_R0_2 - esp_R0^2)) 
+```
+
+And the standard deviation for the final gain : 
+```{r, echo = F}
+(sd_R0 <- sqrt(15^2*(esp_R0_2 - esp_R0^2))) 
+```
+
 
 We rank here the final gain obtained by the 20 players :  
 ```{r}
@@ -874,7 +887,7 @@ simu_distrib_R1 <- function(game, tour_max) {
               simu_k <- numeric(9)
               simu_k[rank_cell[ind_rank]] <- 1
             } else {
-              if(sum(proba_step_k) != 0) {
+              if(sum(proba_step_k) != 0 & tour <= 5) {
                 simu_k <- rmultinom(1, size = 1, prob = proba_step_k)
               } else {
               simu_k <- rmultinom(1, size = 1, prob = proba_cell[, k])
@@ -936,11 +949,13 @@ sum(table(res_sim_R1_3step[1, ], res_sim_R1_3step[2, ])[,2])/100000
 cumsum(table(res_sim_R1_3step[4, ]))/100000
 ```
 
-**Remark:** when a player has already played the most visited cell and knows that it does not contain the value 99, it could be more interesting for him to play the 3rd most visited cell rather the 2nd one.
+**Remark 1:** when a player has already played the most visited cell and knows that it does not contain the value 99, it could be more interesting for him to play the 3rd most visited cell rather the 2nd one.
+
+**Remark 2:** at the end of step 3, if a player has already played the 3 most visited cell, we have done simulations (not presented here) which show that it is more interesting to explore among the cells which has not been visited by all players. Moreover, this assumption can probably be prooved analytically.   
 
 ##### At step 4
 
-A player visits the most visited cell if he did explore it yet. Otherwise, he tries to visit the second most visited cell. Otherwise, he tries the 3rd most visited cell. Otherwise he visits a cell which has not been explored. If they have all been explored, he chooses one of them randomly.  
+A player visits the most visited cell if he did explore it yet. Otherwise, he tries to visit the second most visited cell. Otherwise, he tries the 3rd most visited cell. Otherwise he visits a cell which has not been explored by all the players. If they have all been explored, he chooses one of them randomly.  
 
 We now simulate such a behaviour to understand which could be the best strategy to adopt after step 3.
 
@@ -969,8 +984,9 @@ cumsum(table(res_sim_R1_4step[4, ]))/100000
 
 ##### At step 5
 
-Like in step 4. If players has already played the four first most visited cell and he knows that they do not contain 99, he explores a cell which has not been explored. If they have all been explored, he chooses one of them randomly. 
-We simulate such a behaviour in the next section. 
+Like in step 4. If players have already played the four first most visited cell but they do not contain 99, they should explore a cell which has not been explored yet by the community of players. If the cells have all been explored, they can choose one of the non visited randomly. 
+
+We will simulate such a behaviour in the next section. 
 
 
 #### Simulation of the optimal behaviour of players under R1
@@ -1108,7 +1124,7 @@ For doing this, we create the function *copy\_or\_not()* (codes presented in .Rm
 * **copy**: a player visits the cell the most visited (the cell which contains the maximum number of coins),
 * **explore strongly**: a player played a cell which has never been visited,
 * **explore weakly**: a player played a cell which has been visited by other players but is not among the most visited cells,
-* **no\_risk**: a player does not follow one of the three previous behaviours,
+* **exploit**: a player does not follow one of the three previous behaviours,
 
 ```{r, echo = F}
 copy_or_not <- function (file, cell_visited) {
@@ -1128,7 +1144,7 @@ copy_or_not <- function (file, cell_visited) {
       # repeat or not a cell 
       if (file[k, paste0("cell_", j)] %in% file[k, paste0("cell_", 1:(j - 1))] &
           file[k, paste0("gain_", j)] == 15 & !(99 %in% file[k, paste0("gain_", 1:(j - 1))]) ) {
-        file[k, paste0("copy", j)] <- "no_risk"
+        file[k, paste0("copy", j)] <- "exploit"
       } else {
         # exploring the most visited cell
         # at step j, we look at the cells the most visited cells
@@ -1268,7 +1284,7 @@ file_15_R1_copy[file_15_R1_copy$round_p == "T05_A_session_01",
 ```
 
 
-To test the hypothesis of equality of the means (here we test simultaneously the equality "copy" = "explore strongly"  = "explore weakly" = "no_risk") at each step, we use a non parametric test called "Kruskal-Wallis Rank Sum Test". It shows us that the differences of the means are significant at step 3, 4 and 5. It is not at step 2. 
+To test the hypothesis of equality of the means (here we test simultaneously the equality "copy" = "explore strongly"  = "explore weakly" = "exploit") at each step, we use a non parametric test called "Kruskal-Wallis Rank Sum Test". It shows us that the differences of the means are significant at step 3, 4 and 5. It is not at step 2. 
 
 ```{r}
 (kruskal.test(gather_file_15_R1$gain[gather_file_15_R1$step == "copy2"] ~ 
@@ -1467,16 +1483,55 @@ arrange(temp, final_gain)
 
 **Interpretation:** by considering our few number of observations, the remarks we are giving here might be used with precautions. 
 
-* the three worst strategy consists in copy/others/copy, no_risk/copy/no_risk, explore_weak/others/explore_weak. 
+* the three worst strategy consists in copy/others/copy, exploit/copy/exploit, explore_weak/others/explore_weak. 
 * the two best strategy consists in explore_strong/copy/explore_strong and explore_strong/explore/explore_weak.
 
+####  The profile of the winners of session
+
+We present here the profile of the 6 players who has won their session:
+
+**Session 01, players A:**
+
+```{r, echo = F}
+filter(players_15_R1, player == "A1" & session == "session_01")
+```
+
+**Session 01, players B:**
+
+```{r, echo = F}
+filter(players_15_R1, player == "B1" & session == "session_01")
+```
+
+**Session 02, players A:**
+
+```{r, echo = F}
+filter(players_15_R1, player == "A5" & session == "session_02")
+```
+
+**Session 02, players B:**
+
+```{r, echo = F}
+filter(players_15_R1, player == "B2" & session == "session_02")
+```
+
+**Session 03, players A:**
+
+```{r, echo = F}
+filter(players_15_R1, player == "A3" & session == "session_03")
+```
+
+**Session 03, players B:**
+
+```{r, echo = F}
+filter(players_15_R1, player == "B1" & session == "session_03")
+```
 
 ####  Machine Learning 
 
 Finally, we do a regression tree trying to explain the final gain obtained by players depending on their behaviours. Before doing this, we drop the player who took no risk at step 2 and 5 which seems to adopt a behaviour very different from the other players. 
 
 ```{r}
-players_15_R1 <- filter(players_15_R1, step_2 != "no_risk")
+players_15_R1 <- filter(players_15_R1, step_2 != "exploit")
 ```
 
 
@@ -1519,6 +1574,8 @@ Under R2, there are :
 At each step, the players have the opportunity to let (or not to let) a coin on the cell they have just played.  
 
 ### Optimal strategy for the group 
+
+#### Strategy 1 #### 
 
 It seems that the best strategy for the group under R2 consists of :
 
@@ -1599,6 +1656,71 @@ ggplot(gather_tab_15_R2, aes(y = value, x = step, fill = gain)) +
 ```
 
 **Remark:** at step 5, the probability that a player found 99 is 1. Thus, this strategy is obviously advantageous for the group. Comparing to the empirical distribution, this is clearly not the behaviour which has been adopted by the players. This can be explained by the fact that if all players behave similarly, they optimize the total gain, but the probability to have the best score at the end of a session among the players is the same for all. Hence, if players first think about how they could obtain a better score than other, they might adopt a strategy which is different from the one adopted by others. 
+
+#### Strategy 2 #### 
+
+We propose another strategy which consists of leaving a coin when 0 or 15 have been found. The idea is to play the cells hich have not been played until players will find the value 99. 
+
+Let simulate such a behaviour by using the function *simu_distrib_R3()* (codes are in the .Rmd file).
+
+```{r, echo = F}
+simu_distrib_R3 <- function(game) {
+  # this function simulates a party under R2 
+  # where players optimize the profit for the group
+  proba_cell <- matrix(1, 9, 5)
+  gain <- matrix(0, 5, 5)
+  step <- 1  
+  cell_played <- rep(1, 9)
+  
+  # Loop 
+  while (step <= 5) {
+    play_k <- NULL
+    for (k in 1:5) {
+    simu_k <- rmultinom(1, size = 1, prob = proba_cell[, k])
+    if (simu_k[9] == 1) 
+      proba_cell[, k] <- c(0, 0, 0, 0, 0, 0, 0, 0, 1)
+    else 
+      play_k <- c(play_k, which(simu_k == 1))
+    gain[k, step] <- c(0, 0, 0, 0, 0, game, game, game, 99)[which(simu_k == 1)]
+    }
+   step <- step + 1
+   proba_cell[play_k, ] <- 0
+  }
+  
+  return(gain)
+}
+```
+
+We will replicate 100,000 sessions:
+
+```{r, echo = F}
+distrib_th_15_R3 <- NULL
+for (k in 1:20000)
+  distrib_th_15_R3 <- rbind(distrib_th_15_R3, simu_distrib_R3(15))
+```
+
+```{r, echo = F}
+tab_15_R3 <- apply(distrib_th_15_R3, 2, table)
+gather_tab_15_R3 <- data.frame(value = as.vector(tab_15_R3)/nrow(distrib_th_15_R3), 
+                               gain = rep(c("0", "15", "99"), 5), 
+                               step = paste0("step_", rep(1:5, each = 3))
+                               )
+gather_tab_15_R3$pos <- NULL
+gather_tab_15_R3$pos[gather_tab_15_R3$gain == "0"] <- 0.99
+gather_tab_15_R3$pos[gather_tab_15_R3$gain == "99"] <- 
+  gather_tab_15_R3$value[gather_tab_15_R3$gain == "99"]/2
+gather_tab_15_R3$pos[gather_tab_15_R3$gain == "15"] <- 
+  0.01 + gather_tab_15_R3$value[gather_tab_15_R3$gain == "99"]
+```
+
+```{r, echo = F}
+ggplot(gather_tab_15_R3, aes(y = value, x = step, fill = gain)) + 
+  geom_bar(stat = "identity") + 
+  geom_text(aes(x = step, y = pos, label = paste0(round(value * 100, 2) ,"%")), 
+              size = 4) 
+```
+
+**Remark:** this strategy seems to give results less interesting than the previous 1. In the rest of the section, we will consider the strategy 1 as the best one.
 
 ### Example of an optimal strategy for one player  
 
@@ -2087,7 +2209,7 @@ tapply(players_15_R2$final_gain, list(players_15_R2$info), mean)
 ```
 
 
-### The effects of being a collaborators/liars/both during a session
+### The effects th composition of the group (collaborators/liars/both) during a session
 
 We have the intuition that the final gain obtained by a player during a session will depend on the number of players who belong to one of these categories. For example, if we consider a session where all people behave as "collaborators", we can think that they should use a stratgey such as described in the theoetical framework. However, if there are a majority of "liars", players will understand it and will change their strategy.  
 
@@ -2099,15 +2221,16 @@ y_lab <- tapply(players_15_R2$final_gain, paste0(players_15_R2$session, substr(p
 
 plot(x_lab, y_lab, xlab = "score per session", 
      ylab = "average mean of the final gain", pch = 16, 
-     col = "royalblue")
+     col = "royalblue", xlim = c(-650, 250), ylim = c(2600, 3200))
 text(x_lab, y_lab, c("both", "liar", "both", "liar", 
                      "collaborator", "liar", "liar", "liar"),
      pos = 3)
 ```
 
-We observe that there are 3 sessions where players behave as liars (the sessions with a score lower than -100) and 4 sessions where they behave much more as collaborators (the sessions with a score higher than -100). In this last case, we can observe that the final gain is much more higher. 
+We observe that the more the score per session is higher, the more the average final gain per session is higher. In other terms, when a session contains too much liars, it has a negative impact on the final gain. Moreover, we remark that in the session with the highest positive score (it means a session which contains some collaborators), the winner of the session is also a collaborator. On contrary, the sessions which contain some liars have been won by liars. 
 
-In the following session, we will also try to use this information related to the fact that a session has been done by players who collaborate or not.
+For the rest of the work, we will define the 3 sessions with the highest scores per session as "collaborative" session and the others as "non collaborative session". Indeed, we suppose that this information could have a impact on the results obtained by players. 
+
 
 
 ```{r, echo = F}
@@ -2120,6 +2243,74 @@ players_15_R2$session_info[21:25] <- "collaborative_session"
 players_15_R2$session_info[26:30] <- "collaborative_session"
 players_15_R2$session_info[31:35] <- "liar_session"
 players_15_R2$session_info[36:40] <- "liar_session"
+```
+
+####  The profile of the winners of session
+
+We present here the profile of the 8 players who has won their session:
+
+**Session 01, players A:**
+
+This a "collaborative" session. Here are the characteristics of the winner : 
+
+```{r, echo = F}
+filter(players_15_R2, player == "A5" & session == "session_01")
+```
+
+**Session 01, players B:**
+
+This a "liar" session. Here are the characteristics of the winner : 
+
+```{r, echo = F}
+filter(players_15_R2, player == "B1" & session == "session_01")
+```
+
+**Session 02, players A:**
+
+This a "collaborative" session. Here are the characteristics of the winner : 
+
+```{r, echo = F}
+filter(players_15_R2, player == "A1" & session == "session_02")
+```
+
+**Session 02, players B:**
+
+This a "collaborative" session. Here are the characteristics of the winner : 
+
+```{r, echo = F}
+filter(players_15_R2, player == "B3" & session == "session_02")
+```
+
+**Session 01bis, players A:**
+
+This a "liar" session. Here are the characteristics of the winner : 
+
+```{r, echo = F}
+filter(players_15_R2, player == "A2" & session == "session_01Bis")
+```
+
+**Session 01bis, players B:**
+
+This a "liar" session. Here are the characteristics of the winner : 
+
+```{r, echo = F}
+filter(players_15_R2, player == "B5" & session == "session_01Bis")
+```
+
+**Session 03, players A:**
+
+This a "liar" session. Here are the characteristics of the winner : 
+
+```{r, echo = F}
+filter(players_15_R2, player == "A1" & session == "session_03")
+```
+
+**Session 03, players B:**
+
+This a "liar" session. Here are the characteristics of the winner : 
+
+```{r, echo = F}
+filter(players_15_R2, player == "B2" & session == "session_03")
 ```
 
 
@@ -2135,13 +2326,32 @@ Finally, we do a regression tree trying to explain the final gain obtained by pl
 
 ```{r, echo = F}
 res_tree <- rpart(formula = final_gain ~ step_2 + step_3 + step_4 + step_5 + info + session_info, data = players_15_R2,
-              control = rpart.control(minsplit = 5, cp = 0.01))
+              control = rpart.control(minsplit = 10, cp = 0.01))
 rpart.plot(res_tree)
 ```
 
-**Interpretation:** the variable which discriminates the most the players is the fact that player give good or bad information. The node with the higher final gain corresponds to players who are **liar** and do copy at the step 4.  
+**Interpretation:** the variable which discriminates the most the players is the one which indicates if a player is a "collaborator" or "both" ($67\%$ of the sample with a final gain equal to 2800) or bad information ($33\%$ of the sample with a final gain equal to 3331).  
+
+* The node with the higher final gain corresponds to players who are **liar**, and who explore weakly or takes no risk at step 5.
+
+* The node with the second highest value corresponds to players who are **liar** and belong to a "collaborative" session. 
+
+* The node with the lowest value corresponds to players who are "collaborators" or "both" and copy at step 2. 
+
+* The 2nd node is the node which contains the biggest number of players (12 players) who behave like this : there are players "collaborators" or "both" and "explorer" at step 2 and 5. Their final gain is the second lowest node. 
 
 ### Conclusion under R2 
+
+* The optimal strategy presented could give the best results for the group. However, if all players had adopted such a strategy, it would have given a probability of 1/5 for players to win.
+
+* If a players wants to increase the probability to win during a session, he has necessarly to adopt a different strategy. The theoretical example tends to show that the best situation for a player is to use the information given by the others when they are all collaborators, and do not indicate the location of the cell 99.  
+
+* In the experiment, we can observe that players do not behave similarly depending on the session. Sometimes, players are mostly "liars", sometimes there are a mixture of "liars" and "collaborators", etc. Hence, this is very complicated to detect what could be the most interesting strategy because the profiles of session are different and what could be beter in one case is not necessarely the case in aother one. For example, in a session which contains only liars, one could think that this is preferable to explore strongly. In a session where some players indicate a good information, thus it could be better to copy. 
+
+* Some results can be emphasized :
+    * The sessions composed mostly by liars have a lower final gain than the sessions composed by collaborators.
+    * The players which are liars had obtained in average a better final gain than collaborators or both
+
 
 # Statistical analysis of Stigmer 50
 
